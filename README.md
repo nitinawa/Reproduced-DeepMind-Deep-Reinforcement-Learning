@@ -12,4 +12,4 @@ learning algorithms.
 
 My system is macOS Sierra, with 4-core 2.4 GHz Intel Core i7, and Nvidia GeForce GT 650M
 
-The test results are in folder results, and the training results are in the folder snapshots
+The test results are in Test-Seaquest-v0.zip and Test-SpaceInvaders-v0.zip, and the training results (first 10 epoches of Breakout) are in Train-Breakout-v0.zip.
