@@ -1,0 +1,458 @@
+Error when install gym with python 2.7
+
+Fix with installing pachi-py from openai/pachi-py github repo.
+MACOSX_DEPLOYMENT_TARGET=10.12 python setup.py install
+After installing pachi-py, gym installation succeeded.
+
+-----------------------
+we follow the instruction from here:
+https://github.com/NervanaSystems/simple_dqn
+
+1.  First install neon using anaconda
+
+http://neon.nervanasys.com/docs/latest/installation.html
+
+conda create --name neon-real python=3.5 anaconda
+since gym (full install) is only working with python 3.5 and not python 2.7
+
+source activate neon-real
+python --version
+pip install --ignore-installed pip
+pip3.5 install h5py pyaml
+pip3 5 install --upgrade h5py pyaml
+pip3.5 install numpy
+brew update --with-python3.5
+brew install pkg-config --with-python3.5
+
+git clone https://github.com/NervanaSystems/neon.git
+cd neon && make sysinstall
+
+Error: Import Error (Below)
+ImportError: dlopen(/usr/local/lib/python2.7/site-packages/numpy/core/multiarray.so, 2): Symbol not found: _PyBuffer_Type
+      Referenced from: /usr/local/lib/python2.7/site-packages/numpy/core/multiarray.so
+      Expected in: flat namespace
+     in /usr/local/lib/python2.7/site-packages/numpy/core/multiarray.so
+
+This is caused by conflict between brew, pip and pip3 installation of numpy.
+To fix this, we did
+brew uninstall numpy --with-python3.5
+brew uninstall numpy
+pip3.5 install numpy
+pip2.7 uninstall numpy
+
+Still there is an error when install aeon, to install it separately see
+https://github.com/NervanaSystems/aeon
+
+
+2. Install gym
+brew install cmake boost boost-python sdl2 swig wget --with-python3.5
+brew install boost-python --with-python3.5
+
+****Fix with installing pachi-py from openai/pachi-py github repo.
+MACOSX_DEPLOYMENT_TARGET=10.12 python setup.py install
+After installing pachi-py, gym installation succeeded.
+
+pip install -e '.[all]'
+
+3. 
+pip3.5 install matplotlib
+
+pip3.5 install numpy argparse logging
+
+logging incurs an error
+
+Command "python setup.py egg_info" failed with error code 1 in /private/var/folders/cm/s75k99j52gd_9m8kbjfb2qcw0000gn/T/pip-build-tqu4cnuo/logging/
+
+4. Install opencv
+brew install opencv --with-python3.5
+
+Surprisingly this puts cv2.so in
+/usr/local/lib/python2.7/site-packages/cv2.so instead of
+/usr/local/lib/python3.5/site-packages/cv2.so causing an error 
+
+ImportError: dlopen(/usr/local/lib/python2.7/site-packages/cv2.so, 2): Symbol not found: _PyCObject_Type
+  Referenced from: /usr/local/lib/python2.7/site-packages/cv2.so
+  Expected in: flat namespace
+ in /usr/local/lib/python2.7/site-packages/cv2.so
+ 
+ Even the fix 
+ ln -s /usr/local/lib/python2.7/site-packages/cv2.so  /Users/sirinnitinawarat/anaconda/envs/neon/lib/python3.5/site-packages/  won't work
+ 
+We can undo this by brew uninstall opencv
+
+***Need to reinstall opencv properly.
+http://www.pyimagesearch.com/2015/06/29/install-opencv-3-0-and-python-3-4-on-osx/
+
+Then if necessary, fix the error below when install neon with make sysinstall
+(do not specify python3.5)
+
+
+5. Running code
+
+Training
+
+(neon-py2.7) sirinnismacbook:simple_dqn sirinnitinawarat$ ./train.sh Breakout-v0 --environment gym --backend cpu
+No handlers could be found for logger "environment"
+[2016-12-21 09:31:23,062] Making new env: Breakout-v0
+[2016-12-21 09:31:23,124] Replay memory size: 1000000
+[2016-12-21 09:31:23,131] Problems inferring BLAS info, CPU performance may be suboptimal
+[2016-12-21 09:31:23,132] Initialized NervanaCPU
+[2016-12-21 09:31:23,132] Backend: cpu, RNG seed: None
+[2016-12-21 09:31:23,132] Using 8x8 filter for first Conv
+[2016-12-21 09:31:23,238] Using 8x8 filter for first Conv
+[2016-12-21 09:31:23,330] Results are written to results/Breakout-v0.csv
+[2016-12-21 09:31:23,331] Populating replay memory with 50000 random moves
+[2016-12-21 09:32:39,764]   num_games: 210, average_reward: 1.366667, min_game_reward: 0, max_game_reward: 6
+[2016-12-21 09:32:39,764]   last_exploration_rate: 1.000000, epoch_time: 74s, steps_per_second: 673
+[2016-12-21 09:32:39,764] Epoch #1
+[2016-12-21 09:32:39,765]  Training for 250000 steps
+Traceback (most recent call last):
+  File "src/main.py", line 134, in <module>
+    agent.train(args.train_steps, epoch)
+  File "/Users/sirinnitinawarat/Documents/openai/neon/simple_dqn/src/agent.py", line 104, in train
+    self.net.train(minibatch, epoch)
+  File "/Users/sirinnitinawarat/Documents/openai/neon/simple_dqn/src/deepqnetwork.py", line 174, in train
+    self.callback.on_train(cost.asnumpyarray()[0,0])
+AttributeError: 'numpy.ndarray' object has no attribute 'asnumpyarray'
+
+
+Testing on pretrained networks.
+
+See
+https://github.com/NervanaSystems/neon/issues/214
+
+Error
+(neon-py2.7) sirinnismacbook:simple_dqn sirinnitinawarat$ ./test_gym.sh snapshots/Breakout-v0_77.pkl --backend cpu
+[2016-12-21 09:30:00,370] Making new env: Breakout-v0
+[2016-12-21 09:30:00,458] Problems inferring BLAS info, CPU performance may be suboptimal
+Loading weights from snapshots/Breakout-v0_77.pkl
+[2016-12-21 09:30:00,667] Calling deprecated load_weights function.  Use load_params instead
+[2016-12-21 09:30:00,710] Using old model serialization format. Serialized the model into new format
+Traceback (most recent call last):
+  File "src/test_gym.py", line 82, in <module>
+    net.load_weights(args.load_weights)
+  File "/Users/sirinnitinawarat/Documents/openai/neon/simple_dqn/src/deepqnetwork.py", line 191, in load_weights
+    self.model.load_weights(load_path)
+  File "/Users/sirinnitinawarat/anaconda/envs/neon-py2.7/lib/python2.7/site-packages/neon-1.7.0-py2.7.egg/neon/models/model.py", line 421, in load_weights
+    self.load_params(weight_path)
+  File "/Users/sirinnitinawarat/anaconda/envs/neon-py2.7/lib/python2.7/site-packages/neon-1.7.0-py2.7.egg/neon/models/model.py", line 408, in load_params
+    self.deserialize(load_obj(param_path), load_states=load_states)
+  File "/Users/sirinnitinawarat/anaconda/envs/neon-py2.7/lib/python2.7/site-packages/neon-1.7.0-py2.7.egg/neon/models/model.py", line 452, in deserialize
+    l.set_params(ps)
+  File "/Users/sirinnitinawarat/anaconda/envs/neon-py2.7/lib/python2.7/site-packages/neon-1.7.0-py2.7.egg/neon/layers/layer.py", line 650, in set_params
+    if not hasattr(self, key):
+TypeError: hasattr(): attribute name must be string
+
+------------------------------------
+misc commands
+
+downgrading package
+pip install --upgrade 'scikit-learn>=0.17,<0.18'
+
+
+----------------------------------
+modular_rl errors
+
+**Need to use python2.7
+**Change backend to theano
+
+~/.keras/keras.json
+
+https://keras.io/backend/
+------------------------------------
+neon installation error
+
+
+make[1]: `bin/loader.so' is up to date.
+Installing neon system wide...
+running install
+running bdist_egg
+running egg_info
+writing neon.egg-info/PKG-INFO
+writing top-level names to neon.egg-info/top_level.txt
+writing dependency_links to neon.egg-info/dependency_links.txt
+reading manifest file 'neon.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+writing manifest file 'neon.egg-info/SOURCES.txt'
+installing library code to build/bdist.macosx-10.6-x86_64/egg
+running install_lib
+running build_py
+copying neon/version.py -> build/lib/neon
+creating build/bdist.macosx-10.6-x86_64/egg
+creating build/bdist.macosx-10.6-x86_64/egg/loader
+creating build/bdist.macosx-10.6-x86_64/egg/loader/bin
+copying build/lib/loader/bin/loader.so -> build/bdist.macosx-10.6-x86_64/egg/loader/bin
+creating build/bdist.macosx-10.6-x86_64/egg/neon
+copying build/lib/neon/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon
+creating build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/abstract_backend.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/autodiff.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/backend.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/conv_kernel_test.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/convnet-benchmarks.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/convolution.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/cuda_batchnorm.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/cuda_templates.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/float_ew.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/kernel_specs.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+creating build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels
+copying build/lib/neon/backends/kernels/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels
+creating build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda
+copying build/lib/neon/backends/kernels/cuda/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda
+copying build/lib/neon/backends/kernels/cuda/binary.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda
+copying build/lib/neon/backends/kernels/cuda/convolution.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda
+copying build/lib/neon/backends/kernels/cuda/lookuptable.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda
+copying build/lib/neon/backends/kernels/cuda/nms.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda
+copying build/lib/neon/backends/kernels/cuda/pooling.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda
+copying build/lib/neon/backends/kernels/cuda/roipooling.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda
+creating build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/maxas
+creating build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/maxas/MaxAs
+copying build/lib/neon/backends/kernels/maxas/MaxAs/Cubin.pm -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/maxas/MaxAs
+copying build/lib/neon/backends/kernels/maxas/MaxAs/MaxAs.pm -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/maxas/MaxAs
+copying build/lib/neon/backends/kernels/maxas/MaxAs/MaxAsGrammar.pm -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/maxas/MaxAs
+copying build/lib/neon/backends/kernels/maxas/maxas.pl -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/maxas
+creating build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hconv_bprop_C1_N64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hconv_updat_C128_K128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hconv_updat_C128_K64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hconv_xprop_X128_N128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hconv_xprop_X128_N64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hconv_xprop_X32_N128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hconv_xprop_X64_N128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hconv_xprop_X64_N64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_common_128x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_common_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_common_128x64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_common_32x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nn_128x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nn_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nn_128x64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nn_16x64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nn_32x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nn_32x64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nt_128x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nt_16x64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nt_32x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_nt_32x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_tn_128x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_tn_128x16.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_tn_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/hgemm_tn_128x64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/persistent_rnn_bprop.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/persistent_rnn_fprop.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sconv_bprop_C1_N64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sconv_updat_C128_K128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sconv_updat_C128_K64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sconv_xprop_X128_N128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sconv_xprop_X128_N64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sconv_xprop_X32_N128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sconv_xprop_X64_N128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sconv_xprop_X64_N64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_common_128x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_common_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_common_128x64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_common_32x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_nn_128x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_nn_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_nn_128x64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_nn_32x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_nn_rnn_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_nt_128x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_nt_32x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_rnn_bprop_common_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_rnn_common_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_tn_128x128.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_tn_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_tn_128x64.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/sgemm_tn_rnn_bprop_128x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_direct_updat_64x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_direct_xprop_64x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_winograd_2x2_3x3_32x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_winograd_2x2_5x5_32x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_winograd_3x3_2x2_32x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_winograd_3x3_4x4_32x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_winograd_4x4_3x3_32x32.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_winograd_4x4_3x3_32x32_common.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_winograd_4x4_3x3_32x32_X.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/kernels/sass/xconv_xprop_common.sass -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/sass
+copying build/lib/neon/backends/layer_cpu.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/layer_gpu.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/nervanacpu.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/nervanagpu.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+creating build/bdist.macosx-10.6-x86_64/egg/neon/backends/util
+copying build/lib/neon/backends/util/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/util
+copying build/lib/neon/backends/util/check_gpu.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/util
+copying build/lib/neon/backends/util/source_module.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends/util
+copying build/lib/neon/backends/winograd.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/winograd4.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/winograd5.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+copying build/lib/neon/backends/winograd_conv.py -> build/bdist.macosx-10.6-x86_64/egg/neon/backends
+creating build/bdist.macosx-10.6-x86_64/egg/neon/callbacks
+copying build/lib/neon/callbacks/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/callbacks
+copying build/lib/neon/callbacks/callbacks.py -> build/bdist.macosx-10.6-x86_64/egg/neon/callbacks
+creating build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/aeon_shim.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/convert_imageset_batches.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/dataiterator.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/dataloader.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/dataloader_transformers.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/datasets.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/hdf5iterator.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/image.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/imagecaption.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/imageloader.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/indexer.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/media.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/questionanswer.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/speech.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/text.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/text_preprocessing.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/ticker.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+copying build/lib/neon/data/video.py -> build/bdist.macosx-10.6-x86_64/egg/neon/data
+creating build/bdist.macosx-10.6-x86_64/egg/neon/initializers
+copying build/lib/neon/initializers/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/initializers
+copying build/lib/neon/initializers/initializer.py -> build/bdist.macosx-10.6-x86_64/egg/neon/initializers
+creating build/bdist.macosx-10.6-x86_64/egg/neon/layers
+copying build/lib/neon/layers/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/layers
+copying build/lib/neon/layers/container.py -> build/bdist.macosx-10.6-x86_64/egg/neon/layers
+copying build/lib/neon/layers/layer.py -> build/bdist.macosx-10.6-x86_64/egg/neon/layers
+copying build/lib/neon/layers/recurrent.py -> build/bdist.macosx-10.6-x86_64/egg/neon/layers
+creating build/bdist.macosx-10.6-x86_64/egg/neon/models
+copying build/lib/neon/models/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/models
+copying build/lib/neon/models/model.py -> build/bdist.macosx-10.6-x86_64/egg/neon/models
+creating build/bdist.macosx-10.6-x86_64/egg/neon/optimizers
+copying build/lib/neon/optimizers/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/optimizers
+copying build/lib/neon/optimizers/optimizer.py -> build/bdist.macosx-10.6-x86_64/egg/neon/optimizers
+creating build/bdist.macosx-10.6-x86_64/egg/neon/transforms
+copying build/lib/neon/transforms/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/transforms
+copying build/lib/neon/transforms/activation.py -> build/bdist.macosx-10.6-x86_64/egg/neon/transforms
+copying build/lib/neon/transforms/cost.py -> build/bdist.macosx-10.6-x86_64/egg/neon/transforms
+copying build/lib/neon/transforms/transform.py -> build/bdist.macosx-10.6-x86_64/egg/neon/transforms
+creating build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/util/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/util/argparser.py -> build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/util/beamsearch.py -> build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/util/compat.py -> build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/util/load_experiment.py -> build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/util/modeldesc.py -> build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/util/persist.py -> build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/util/update_dataset_cache.py -> build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/util/yaml_parse.py -> build/bdist.macosx-10.6-x86_64/egg/neon/util
+copying build/lib/neon/version.py -> build/bdist.macosx-10.6-x86_64/egg/neon
+creating build/bdist.macosx-10.6-x86_64/egg/neon/visualizations
+copying build/lib/neon/visualizations/__init__.py -> build/bdist.macosx-10.6-x86_64/egg/neon/visualizations
+copying build/lib/neon/visualizations/data.py -> build/bdist.macosx-10.6-x86_64/egg/neon/visualizations
+copying build/lib/neon/visualizations/figure.py -> build/bdist.macosx-10.6-x86_64/egg/neon/visualizations
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/abstract_backend.py to abstract_backend.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/autodiff.py to autodiff.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/backend.py to backend.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/conv_kernel_test.py to conv_kernel_test.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/convnet-benchmarks.py to convnet-benchmarks.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/convolution.py to convolution.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/cuda_batchnorm.py to cuda_batchnorm.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/cuda_templates.py to cuda_templates.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/float_ew.py to float_ew.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernel_specs.py to kernel_specs.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda/binary.py to binary.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda/convolution.py to convolution.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda/lookuptable.py to lookuptable.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda/nms.py to nms.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda/pooling.py to pooling.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/kernels/cuda/roipooling.py to roipooling.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/layer_cpu.py to layer_cpu.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/layer_gpu.py to layer_gpu.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/nervanacpu.py to nervanacpu.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/nervanagpu.py to nervanagpu.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/util/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/util/check_gpu.py to check_gpu.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/util/source_module.py to source_module.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/winograd.py to winograd.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/winograd4.py to winograd4.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/winograd5.py to winograd5.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/backends/winograd_conv.py to winograd_conv.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/callbacks/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/callbacks/callbacks.py to callbacks.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/aeon_shim.py to aeon_shim.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/convert_imageset_batches.py to convert_imageset_batches.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/dataiterator.py to dataiterator.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/dataloader.py to dataloader.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/dataloader_transformers.py to dataloader_transformers.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/datasets.py to datasets.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/hdf5iterator.py to hdf5iterator.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/image.py to image.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/imagecaption.py to imagecaption.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/imageloader.py to imageloader.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/indexer.py to indexer.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/media.py to media.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/questionanswer.py to questionanswer.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/speech.py to speech.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/text.py to text.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/text_preprocessing.py to text_preprocessing.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/ticker.py to ticker.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/data/video.py to video.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/initializers/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/initializers/initializer.py to initializer.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/layers/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/layers/container.py to container.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/layers/layer.py to layer.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/layers/recurrent.py to recurrent.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/models/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/models/model.py to model.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/optimizers/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/optimizers/optimizer.py to optimizer.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/transforms/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/transforms/activation.py to activation.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/transforms/cost.py to cost.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/transforms/transform.py to transform.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/util/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/util/argparser.py to argparser.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/util/beamsearch.py to beamsearch.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/util/compat.py to compat.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/util/load_experiment.py to load_experiment.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/util/modeldesc.py to modeldesc.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/util/persist.py to persist.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/util/update_dataset_cache.py to update_dataset_cache.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/util/yaml_parse.py to yaml_parse.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/version.py to version.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/visualizations/__init__.py to __init__.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/visualizations/data.py to data.pyc
+byte-compiling build/bdist.macosx-10.6-x86_64/egg/neon/visualizations/figure.py to figure.pyc
+creating build/bdist.macosx-10.6-x86_64/egg/EGG-INFO
+installing scripts to build/bdist.macosx-10.6-x86_64/egg/EGG-INFO/scripts
+running install_scripts
+running build_scripts
+creating build/bdist.macosx-10.6-x86_64/egg/EGG-INFO/scripts
+copying build/scripts-2.7/neon -> build/bdist.macosx-10.6-x86_64/egg/EGG-INFO/scripts
+copying build/scripts-2.7/nvis -> build/bdist.macosx-10.6-x86_64/egg/EGG-INFO/scripts
+changing mode of build/bdist.macosx-10.6-x86_64/egg/EGG-INFO/scripts/neon to 755
+changing mode of build/bdist.macosx-10.6-x86_64/egg/EGG-INFO/scripts/nvis to 755
+copying neon.egg-info/PKG-INFO -> build/bdist.macosx-10.6-x86_64/egg/EGG-INFO
+copying neon.egg-info/SOURCES.txt -> build/bdist.macosx-10.6-x86_64/egg/EGG-INFO
+copying neon.egg-info/dependency_links.txt -> build/bdist.macosx-10.6-x86_64/egg/EGG-INFO
+copying neon.egg-info/top_level.txt -> build/bdist.macosx-10.6-x86_64/egg/EGG-INFO
+writing build/bdist.macosx-10.6-x86_64/egg/EGG-INFO/native_libs.txt
+zip_safe flag not set; analyzing archive contents...
+neon.backends.kernel_specs: module references __file__
+neon.data.dataloader: module references __file__
+neon.util.persist: module references __path__
+creating 'dist/neon-1.7.0-py2.7.egg' and adding 'build/bdist.macosx-10.6-x86_64/egg' to it
+removing 'build/bdist.macosx-10.6-x86_64/egg' (and everything under it)
+Processing neon-1.7.0-py2.7.egg
+removing '/Users/sirinnitinawarat/anaconda/envs/neon-py2.7/lib/python2.7/site-packages/neon-1.7.0-py2.7.egg' (and everything under it)
+creating /Users/sirinnitinawarat/anaconda/envs/neon-py2.7/lib/python2.7/site-packages/neon-1.7.0-py2.7.egg
+Extracting neon-1.7.0-py2.7.egg to /Users/sirinnitinawarat/anaconda/envs/neon-py2.7/lib/python2.7/site-packages
+neon 1.7.0 is already the active version in easy-install.pth
+Installing neon script to /Users/sirinnitinawarat/anaconda/envs/neon-py2.7/bin
+Installing nvis script to /Users/sirinnitinawarat/anaconda/envs/neon-py2.7/bin
+
+Installed /Users/sirinnitinawarat/anaconda/envs/neon-py2.7/lib/python2.7/site-packages/neon-1.7.0-py2.7.egg
+Processing dependencies for neon==1.7.0
+Finished processing dependencies for neon==1.7.0
+
