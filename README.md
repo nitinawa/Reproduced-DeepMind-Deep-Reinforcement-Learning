@@ -14,4 +14,4 @@ My system is macOS Sierra, with 4-core 2.4 GHz Intel Core i7, and Nvidia GeForce
 
 The test results are in Test-Seaquest-v0.zip and Test-SpaceInvaders-v0.zip, and the training results (first 3 epoches of Breakout-v0) are in Train-Breakout-v0.zip.
 
-To make it work on my system I need to slightly modify deepnetwork.py from https://github.com/NervanaSystems/simple_dqn, and write a small script in WeightTransform.py to transform the deprecated weight form to a new form.
+To make it work on my system I need to slightly modify deepnetwork.py from https://github.com/NervanaSystems/simple_dqn, and write a small script in WeightTransform.py to transform the deprecated format for neural network weights to a new format.
